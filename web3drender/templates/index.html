@@ -2,44 +2,26 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Загрузка GLTF файла</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка GLB файла</title>
 </head>
 <body>
-    <h1>Загрузите GLTF файл</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".gltf,.glb" required>
-        <button type="submit">Загрузить</button>
-    </form>
 
-    <div id="download-section" style="display:none;">
-        <h2>Обработанный файл</h2>
-        <a id="download-link" href="#" download>Скачать обработанный файл</a>
-    </div>
+<h1>Загрузите GLB файл</h1>
+<form action="/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".glb" required>
+    <button type="submit">Загрузить и рендерить</button>
+</form>
 
-    <script>
-        const form = document.querySelector('form');
-        
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const formData = new FormData(form);
-            const response = await fetch('/upload', {
-                method: 'POST',
-                body: formData
-            });
+{% if download_link %}
+    <h2>Рендеринг завершен!</h2>
+    <img src="{{ url_for('download_file', filename=download_link) }}" alt="Отрендеренное изображение">
+{% endif %}
 
-            if (response.ok) {
-                const data = await response.json();
-                const downloadSection = document.getElementById('download-section');
-                const downloadLink = document.getElementById('download-link');
-                
-                downloadLink.href = '/download/' + data.output_filename;
-                downloadLink.textContent = 'Скачать ' + data.output_filename;
-                downloadSection.style.display = 'block';
-            } else {
-                const errorText = await response.text();
-                alert(errorText);
-            }
-        });
-    </script>
+{% if error %}
+    <h2>Ошибка!</h2>
+    <p>{{ error }}</p>
+{% endif %}
+
 </body>
 </html>

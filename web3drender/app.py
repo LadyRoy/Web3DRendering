@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
 import os
 import bpy
-from flask import Flask, render_template, request
+import tempfile
+from flask import Flask, render_template, request, send_from_directory
+
 path_to_jpeg_folder = "D:/work/jpeg"
+hdri_folder = "D:/work/hdri"
+uploads_folder = "D:/work/web3drender/web3drender/uploads"
 app = Flask(__name__)
+
+# Получаем список HDRI файлов
+hdri_files = [f for f in os.listdir(hdri_folder) if f.endswith('.hdr')]
 
 @app.route('/')
 def show_main_page():
@@ -19,30 +26,66 @@ def handle_file_upload():
     if uploaded_file.filename == '':
         return "Файл не выбран", 400
     
-    file_content = uploaded_file.read()
-    temp_file_path = os.path.join("/tmp", uploaded_file.filename)
+    upload_path = os.path.join(uploads_folder, uploaded_file.filename)
+    uploaded_file.save(upload_path)
     
-    #открываем полученный файл
-    with open(temp_file_path, 'wb') as temp_file:
-        temp_file.write(file_content)
     try:
-        bpy.ops.import_scene.gltf(filepath=temp_file_path) 
+        # Импортируем GLB файл
+        bpy.ops.import_scene.gltf(filepath=upload_path)
+
+        # Удаление куба по умолчанию
+        if "Cube" in bpy.data.objects:
+            object_to_delete = bpy.data.objects["Cube"]
+            bpy.data.objects.remove(object_to_delete, do_unlink=True)
+        
+        # Настройка HDRI
+        world = bpy.context.scene.world
+        if world is None:
+            world = bpy.data.worlds.new("World")
+            bpy.context.scene.world = world
+            
+        world.use_nodes = True
+        
+        # Добавляем узлы
+        env_texture_node = world.node_tree.nodes.new(type='ShaderNodeTexEnvironment')
+        hdri_image_path = os.path.join(hdri_folder, hdri_files[0])
+        env_texture_node.image = bpy.data.images.load(hdri_image_path)
+
+        # Текстурные координаты
+        tex_coord_node = world.node_tree.nodes.new(type='ShaderNodeTexCoord')
+        
+        # Отображение
+        mapping_node = world.node_tree.nodes.new(type='ShaderNodeMapping')
+        
+        # Фоновый узел
+        bg_node = world.node_tree.nodes.get("Background")
+        if bg_node is None:
+            bg_node = world.node_tree.nodes.new(type='ShaderNodeBackground')
+
+        # Соединяем узлы
+        links = world.node_tree.links
+        links.new(tex_coord_node.outputs['Generated'], mapping_node.inputs['Vector'])
+        links.new(mapping_node.outputs['Vector'], env_texture_node.inputs['Vector'])
+        links.new(env_texture_node.outputs['Color'], bg_node.inputs['Color'])
+
+        # Установка количества семплов 
+        bpy.context.scene.cycles.samples = 128  
+        
+        # Настройка выхода
         output_filename = os.path.splitext(uploaded_file.filename)[0] + '.jpeg'
         output_filepath = os.path.join(path_to_jpeg_folder, output_filename)
-
+        
         bpy.context.scene.render.filepath = output_filepath
-        bpy.context.scene.render.image_settings.file_format = "JPEG"
+        bpy.context.scene.render.image_settings.file_format = 'JPEG'
+        
+        # Рендер и сохранение
         bpy.ops.render.render(write_still=True)
-        return {"Сё оке": output_filename}, 200
-    
+
     except Exception as e:
         return f"Ошибка при импорте файла: {str(e)}", 500
     
-    finally:
-        #удаляем файлик
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-    
+    return render_template('index.html', download_link=output_filename)
+
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
     return send_from_directory(path_to_jpeg_folder, filename, as_attachment=True)
