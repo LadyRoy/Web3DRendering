@@ -2,14 +2,18 @@ import os
 import bpy
 import time
 from flask import Flask, render_template, request, send_from_directory
+# TODO нет файла requirements.txt, без него придется гадать, какие версии библиотек использовать
 
-path_to_jpeg_folder = "D:/work/jpeg"
-hdri_folder = "D:/work/hdri"
-uploads_folder = "D:/work/web3drender/web3drender/uploads"
+# TODO такие абсолютные пути не позволяют запустить код где либо еще
+current_dir = os.getcwd()
+path_to_jpeg_folder = os.path.join(current_dir, "../" ,"uploads")
+hdri_image_path = os.path.join(current_dir, "../", "assets", "studio_small_09_8k.hdr")
+uploads_folder = os.path.join(current_dir, "../", "uploads")
 app = Flask(__name__)
 
+# TODO не поянл логику брать первый попавшийся hdri файл
 # Получаем список HDRI файлов
-hdri_files = [f for f in os.listdir(hdri_folder) if f.endswith('.hdr')]
+# hdri_files = [f for f in os.listdir(hdri_folder) if f.endswith('.hdr')]
 
 @app.route('/')
 def show_main_page():
@@ -48,7 +52,7 @@ def handle_file_upload():
         
         # Добавляем узлы
         env_texture_node = world.node_tree.nodes.new(type='ShaderNodeTexEnvironment')
-        hdri_image_path = os.path.join(hdri_folder, hdri_files[0])
+        # hdri_image_path = os.path.join(hdri_folder, hdri_files[0])
         env_texture_node.image = bpy.data.images.load(hdri_image_path)
         # Текстурные координаты
         tex_coord_node = world.node_tree.nodes.new(type='ShaderNodeTexCoord')
