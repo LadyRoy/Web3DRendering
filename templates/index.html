@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка GLB файла</title>
+</head>
+<body>
+
+<h1>Загрузите GLB файл</h1>
+<form action="/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".glb" required>
+    <button type="submit">Загрузить и рендерить</button>
+</form>
+
+{% if download_link %}
+    <h2>Рендеринг завершен!</h2>
+    <p>Время рендеринга: {{ render_time|round(2) }} секунд</p>
+    <img src="{{ url_for('download_file', filename=download_link) }}" alt="Отрендеренное изображение">
+    
+{% endif %}
+
+{% if error %}
+    <h2>Ошибка!</h2>
+    <p>{{ error }}</p>
+{% endif %}
+
+</body>
+</html>
