@@ -10,11 +10,6 @@ hdri_image_path = os.path.join(current_dir, "../assets", "studio.hdr")
 uploads_folder = os.path.join(current_dir, "../uploads")
 app = Flask(__name__)
 
-if os.path.exists(hdri_image_path):
-    print(f"Существует: {hdri_image_path}")
-else:
-    print(f"Не существует: {hdri_image_path}")
-print(f"Путь к HDRI файлу: {hdri_image_path}")
 @app.route('/')
 def show_main_page():
     return render_template('index.html')
