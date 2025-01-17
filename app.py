@@ -4,6 +4,8 @@ import time
 from flask import Flask, render_template, request, send_from_directory
 
 
+
+
 current_dir = os.getcwd()
 path_to_jpeg_folder = os.path.join(current_dir, "../uploads")
 hdri_image_path = os.path.join(current_dir, "../assets", "studio.hdr")
@@ -47,6 +49,10 @@ def handle_file_upload():
         
         # Добавляем узлы
         env_texture_node = world.node_tree.nodes.new(type='ShaderNodeTexEnvironment')
+
+        # hdri_image_path = os.path.join(hdri_folder, hdri_files[0])
+
+
         env_texture_node.image = bpy.data.images.load(hdri_image_path)
         # Текстурные координаты
         tex_coord_node = world.node_tree.nodes.new(type='ShaderNodeTexCoord')

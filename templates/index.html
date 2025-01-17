@@ -4,8 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Загрузка GLB файла</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r126/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
+
+
 </head>
 <body>
+<script>
+    //import * as THREE from 'three';
+
+    const scene = new THREE.Scene();
+    //Поле зрения, соотношение сторон, плоскости отсечения
+    const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+
+    const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+    const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+    const cube = new THREE.Mesh( geometry, material );
+    scene.add( cube );
+
+
+    //const loader = new GLTFLoader();
+
+    //loader.load( 'D:/work/web3drender/templates/house.glb', function ( gltf ) {
+      //  const model = gltf.scene;
+        //Попытка пропихнуть модель в центр сцены
+       // const box = new THREE.Box3().setFromObject(model);
+       // const center = box.getCenter(new THREE.Vector3());
+
+      //  model.position.sub(center);
+      //  scene.add( model )
+        //камеру чуть подальше от центра
+       // camera.position.set(center.x, center.y, box.max.z + 10);
+       // console.log(model);
+   // }, undefined, function ( error ) {
+	//console.error( error );}
+   // );
+
+    //const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    camera.position.z = 10;
+
+
+    function animate() {
+        //controls.update();
+        cube.rotation.x += 0.01;
+	renderer.render( scene, camera );
+
+    }
+    renderer.setAnimationLoop( animate );
+</script>
+
+</head>
+<body>
+
 
 <h1>Загрузите GLB файл</h1>
 <form action="/upload" method="post" enctype="multipart/form-data">
