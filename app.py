@@ -3,9 +3,6 @@ import bpy
 import time
 from flask import Flask, render_template, request, send_from_directory
 
-
-
-
 current_dir = os.getcwd()
 path_to_jpeg_folder = os.path.join(current_dir, "../uploads")
 hdri_image_path = os.path.join(current_dir, "../assets", "studio.hdr")
@@ -30,8 +27,7 @@ def handle_file_upload():
     uploaded_file.save(upload_path)
     
     try:
-        
-        
+
     # Импортируем GLB файл
         bpy.ops.import_scene.gltf(filepath=upload_path)
         # Удаление куба по умолчанию
@@ -49,11 +45,8 @@ def handle_file_upload():
         
         # Добавляем узлы
         env_texture_node = world.node_tree.nodes.new(type='ShaderNodeTexEnvironment')
-
-        # hdri_image_path = os.path.join(hdri_folder, hdri_files[0])
-
-
         env_texture_node.image = bpy.data.images.load(hdri_image_path)
+
         # Текстурные координаты
         tex_coord_node = world.node_tree.nodes.new(type='ShaderNodeTexCoord')
         
@@ -75,12 +68,16 @@ def handle_file_upload():
         # Настройка выхода
         output_filename = os.path.splitext(uploaded_file.filename)[0] + '.jpeg'
         output_filepath = os.path.join(path_to_jpeg_folder, output_filename)
-        
+
         bpy.context.scene.render.filepath = output_filepath
         bpy.context.scene.render.image_settings.file_format = 'JPEG'
         start_time = time.time()
         # Рендер и сохранение
+
+        bpy.app.handlers.render_post.append(save)
+        bpy.app.handlers.render_complete.append(end)
         bpy.ops.render.render(write_still=True)
+
         end_time = time.time()
         render_time = end_time - start_time
 
@@ -88,6 +85,12 @@ def handle_file_upload():
         return f"Ошибка при импорте файла: {str(e)}", 500
     
     return render_template('index.html', download_link=output_filename, render_time=render_time)
+
+
+def save(scene):
+    print("В процессе..")
+def end(scene):
+    print("Рендер завершен.")
 
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
