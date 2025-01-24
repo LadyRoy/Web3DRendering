@@ -76,6 +76,7 @@ def handle_file_upload():
 
         bpy.app.handlers.render_post.append(save)
         bpy.app.handlers.render_complete.append(end)
+        bpy.app.handlers.render_stats.append(render_stats)
         bpy.ops.render.render(write_still=True)
 
         end_time = time.time()
@@ -86,9 +87,11 @@ def handle_file_upload():
     
     return render_template('index.html', download_link=output_filename, render_time=render_time)
 
+def render_stats(scene):
 
+    print(f"В процессе..")
 def save(scene):
-    print("В процессе..")
+    print("Сохранение изображения..")
 def end(scene):
     print("Рендер завершен.")
 
