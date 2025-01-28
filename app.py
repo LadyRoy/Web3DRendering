@@ -87,18 +87,19 @@ def handle_file_upload():
         end_time = time.time()
         render_time = end_time - start_time
 
+
     except Exception as e:
         return f"Ошибка при импорте файла: {str(e)}", 500
-    
+
     return render_template('index.html', download_link=output_filename, render_time=render_time)
 
-# Надо подумать условие, при котором будет проверка новых данных и обновлять ее
-def long_polling():
+# Проверка и обновление данных
+def long_polling(data):
     start_time = time.time()
     timeout = 20
     while time.time() - start_time < timeout:
-
-        #if :
+        data = new_data()
+        if data is None:
             time.sleep(1)
 
     return jsonify({"message": "Timeout"}), 204
@@ -107,7 +108,17 @@ def long_polling():
 def render_stats(scene):
     session['render_stats'] = []
     session['time'] = time.time()
+    session['render_stats'] = f"Рендеринг {scene.render.layer_slots[0].name}..."
 
+def new_data():
+    # Ищем новые данные
+    if 'render_stats' in session and 'time' in session:
+        return {
+            'render_stats': session['render_stats'],
+            'time': session['time']
+        }
+    else:
+        return None
 
 #def render_stats(scene):
  #   print(f"В процессе..")
