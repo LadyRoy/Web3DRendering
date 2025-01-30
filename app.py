@@ -20,6 +20,8 @@ def show_main_page():
 
 @app.route('/upload', methods=['POST'])
 def handle_file_upload():
+    session.clear()
+    session['render_stats'] = None
     if 'file' not in request.files:
         return "Файл не выбран", 400
 
@@ -75,14 +77,19 @@ def handle_file_upload():
         bpy.context.scene.render.filepath = output_filepath
         bpy.context.scene.render.image_settings.file_format = 'JPEG'
         # Установка количества семплов
-        #bpy.context.scene.cycles.samples = 128
+        bpy.context.scene.cycles.samples = 64
         start_time = time.time()
         # Рендер и сохранение
 
         bpy.app.handlers.render_post.append(save)
         bpy.app.handlers.render_complete.append(end)
         bpy.app.handlers.render_stats.append(render_stats)
-        bpy.ops.render.render(write_still=True)
+        for sample in range(total_samples):
+            global rendered_samples
+            bpy.ops.render.render(write_still=True)  # Рендер текущего кадра
+            rendered_samples += 1  # Увеличиваем счетчик
+            render_stats(bpy.context.scene)
+
 
         end_time = time.time()
         render_time = end_time - start_time
@@ -93,35 +100,35 @@ def handle_file_upload():
 
     return render_template('index.html', download_link=output_filename, render_time=render_time)
 
-# Проверка и обновление данных
-def long_polling(data):
-    start_time = time.time()
-    timeout = 20
-    while time.time() - start_time < timeout:
-        data = new_data()
-        if data is None:
-            time.sleep(1)
+scene = bpy.context.scene
+total_samples = scene.cycles.samples  # Общее количество сэмплов
 
-    return jsonify({"message": "Timeout"}), 204
+
 
 #Запись в сессию статы и времени
 def render_stats(scene):
-    session['render_stats'] = []
-    session['time'] = time.time()
-    session['render_stats'] = f"Рендеринг {scene.render.layer_slots[0].name}..."
+
+    progress = (rendered_samples / total_samples) * 100
+    print(f'Прогресс рендеринга: {progress:.2f}% ({rendered_samples}/{total_samples} сэмплов)')
+    session['render_stats'] = f"Рендеринг... {progress:.2f}% ({rendered_samples}/{total_samples} обработано"
+    if progress >= 100:
+        session['render_stats'] = f'Завершено'
+@app.route('/poll', methods=['GET'])
+def poll():
+    data = new_data()
+    if data:
+        return jsonify(data), 200
+    return jsonify({"Сообщение": "Нет данных"}), 204
 
 def new_data():
-    # Ищем новые данные
-    if 'render_stats' in session and 'time' in session:
+    if 'render_stats' in session and session['render_stats'] is not None:
         return {
             'render_stats': session['render_stats'],
-            'time': session['time']
+            'time': session.get('time')
         }
     else:
         return None
 
-#def render_stats(scene):
- #   print(f"В процессе..")
 def save(scene):
     print("Сохранение изображения..")
 def end(scene):

@@ -13,17 +13,53 @@
     <button type="submit">Загрузить и рендерить!</button>
 </form>
 
+<div id="render-status"></div>
+
 {% if download_link %}
     <h2>Рендеринг завершен!</h2>
     <p>Время рендеринга: {{ render_time|round(2) }} секунд</p>
     <img src="{{ url_for('download_file', filename=download_link) }}" alt="Отрендеренное изображение">
-
 {% endif %}
 
 {% if error %}
     <h2>Ошибка!</h2>
     <p>{{ error }}</p>
 {% endif %}
+
+<script>
+function fetchRenderStats() {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/poll', true);
+
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.render_stats) {
+                    document.getElementById('render-status').innerText = response.render_stats;
+                } else {
+                    document.getElementById('render-status').innerText = 'Рендеринг не запущен.';
+                }
+            } catch (e) {
+                console.error('Ошибка парсинга JSON:', e);
+            }
+            setTimeout(fetchRenderStats, 1000);
+        } else {
+            console.error('Ошибка при получении статуса рендеринга:', xhr.statusText);
+        }
+    };
+
+    xhr.onerror = function() {
+        console.error('Запрос не удался');
+    };
+
+    xhr.send();
+}
+
+window.onload = function() {
+    fetchRenderStats();
+};
+</script>
 
 </body>
 </html>
