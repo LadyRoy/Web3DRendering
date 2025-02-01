@@ -8,6 +8,7 @@ current_dir = os.getcwd()
 path_to_jpeg_folder = os.path.join(current_dir, "../uploads")
 hdri_image_path = os.path.join(current_dir, "../assets", "studio.hdr")
 uploads_folder = os.path.join(current_dir, "../uploads")
+rendered_samples = 0
 app = Flask(__name__)
 
 app.config["SESSION_PERMANENT"] = False #время жизни сессии, при закрытии браузера закроется.
@@ -20,8 +21,8 @@ def show_main_page():
 
 @app.route('/upload', methods=['POST'])
 def handle_file_upload():
+    global rendered_samples
     session.clear()
-    session['render_stats'] = None
     if 'file' not in request.files:
         return "Файл не выбран", 400
 
@@ -81,19 +82,15 @@ def handle_file_upload():
         start_time = time.time()
         # Рендер и сохранение
 
-        bpy.app.handlers.render_post.append(save)
-        bpy.app.handlers.render_complete.append(end)
-        bpy.app.handlers.render_stats.append(render_stats)
+        #bpy.app.handlers.render_post.append(save) вывод прогресса в консоль если надо
+        #bpy.app.handlers.render_complete.append(end)
         for sample in range(total_samples):
-            global rendered_samples
             bpy.ops.render.render(write_still=True)  # Рендер текущего кадра
-            rendered_samples += 1  # Увеличиваем счетчик
+            rendered_samples += 1
             render_stats(bpy.context.scene)
-
 
         end_time = time.time()
         render_time = end_time - start_time
-
 
     except Exception as e:
         return f"Ошибка при импорте файла: {str(e)}", 500
@@ -101,38 +98,31 @@ def handle_file_upload():
     return render_template('index.html', download_link=output_filename, render_time=render_time)
 
 scene = bpy.context.scene
-total_samples = scene.cycles.samples  # Общее количество сэмплов
+total_samples = scene.cycles.samples
 
-
-
+render_status = {}
 #Запись в сессию статы и времени
 def render_stats(scene):
-
     progress = (rendered_samples / total_samples) * 100
+
     print(f'Прогресс рендеринга: {progress:.2f}% ({rendered_samples}/{total_samples} сэмплов)')
-    session['render_stats'] = f"Рендеринг... {progress:.2f}% ({rendered_samples}/{total_samples} обработано"
+
+    render_status['render_stats'] = f"Рендеринг... {progress:.2f}% ({rendered_samples}/{total_samples} обработано)"
+
     if progress >= 100:
-        session['render_stats'] = f'Завершено'
+        render_status['render_stats'] = f'Завершено!'
+
 @app.route('/poll', methods=['GET'])
 def poll():
-    data = new_data()
-    if data:
-        return jsonify(data), 200
-    return jsonify({"Сообщение": "Нет данных"}), 204
+    if 'render_stats' in render_status:
+        return jsonify(render_status), 200
+    return jsonify({"Info": "Нет данных"}), 204
 
-def new_data():
-    if 'render_stats' in session and session['render_stats'] is not None:
-        return {
-            'render_stats': session['render_stats'],
-            'time': session.get('time')
-        }
-    else:
-        return None
-
-def save(scene):
-    print("Сохранение изображения..")
-def end(scene):
-    print("Рендер завершен.")
+#Для вывода в консоль если надо-
+#def save(scene):
+#    print("Сохранение изображения..")
+#def end(scene):
+#print("Рендер завершен.")
 
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):

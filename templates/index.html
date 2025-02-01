@@ -30,8 +30,12 @@
 function fetchRenderStats() {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', '/poll', true);
+    xhr.setRequestHeader('Cache-Control', 'no-cache');
 
     xhr.onload = function() {
+        console.log("Статус ответа:", xhr.status);
+        console.log("Ответ сервера:", xhr.responseText);
+
         if (xhr.status === 200) {
             try {
                 const response = JSON.parse(xhr.responseText);
@@ -43,6 +47,9 @@ function fetchRenderStats() {
             } catch (e) {
                 console.error('Ошибка парсинга JSON:', e);
             }
+            setTimeout(fetchRenderStats, 1000);
+        } else if (xhr.status === 204) {
+            document.getElementById('render-status').innerText = 'Ожидание начала рендеринга...';
             setTimeout(fetchRenderStats, 1000);
         } else {
             console.error('Ошибка при получении статуса рендеринга:', xhr.statusText);
@@ -59,6 +66,7 @@ function fetchRenderStats() {
 window.onload = function() {
     fetchRenderStats();
 };
+
 </script>
 
 </body>
